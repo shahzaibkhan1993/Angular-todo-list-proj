@@ -1,0 +1,97 @@
+<p-toast key="addTask" position="top-right"></p-toast>
+<p-toast key="addDetails" position="top-right"></p-toast>
+<div style="margin-top: 100px;">
+
+    <div class="todo-app">
+        <h1 style="font-family: sans-serif">Task Managment System</h1>
+        <div class="task-entry">
+          <div>
+            <p-dropdown [options]="importanceLevels" [(ngModel)]="newTaskImportance" placeholder="Select Priority">
+              <ng-template let-item pTemplate="item">
+                <span style="margin-left: 5px"> {{ item.label }}</span> &nbsp;
+                <i style="margin-left: 5px;font-size: 12px;" [class]="item.icon" [ngStyle]="{color: item.color}"></i>
+              </ng-template>
+            </p-dropdown>
+          </div>
+          <div style="margin-left: 5px;"><p-calendar [(ngModel)]="taskDueDate" placeholder="Select Due Date" [showIcon]="true" [showTime]="true" dateFormat="dd.mm.yy" hourFormat="12" showButtonBar="true"(onSelect)="onDateSelect()" [minDate]="minDate"></p-calendar></div>
+        </div>
+        <div class="task-entry">
+          <input type="text" [(ngModel)]="newTaskTitle" placeholder="Add a new task title here..." style="white-space: pre-wrap;"/>          
+          <button pButton type="button"  class="ui-button-info" label="Create Task" icon="pi pi-plus" (click)="addTask()"></button>
+        </div>
+      
+        
+        <div class="filter-buttons">
+          <button pButton style="background-color: #E6194A;" icon="pi pi-list" class=" ui-button-raised" label=" All " (click)="setFilter('all')"></button>
+          <button pButton class="ui-button-success ui-button-raised" icon="pi pi-check" label="Completed" (click)="setFilter('completed')"></button>
+          <button pButton class="ui-button-warning ui-button-raised" icon="pi pi-hourglass" label="Pending" (click)="setFilter('pending')"></button>
+          <button pButton class="ui-button-secondary ui-button-raised" icon="pi pi-folder-plus" label="Archived" (click)="setFilter('archived')"></button>
+        </div>
+        
+        <ul class="task-list" >
+          <li *ngFor="let task of tasks" class="task-item" pTooltip="Right Click to add Task Details" tooltipPosition="bottom"
+          [ngClass]="{
+            'task-completed': task.completed && !task.archived,
+            'task-pending': !task.completed && !task.archived,
+            'task-archived': task.archived,
+            'clicked': task.clicked
+          }" (onChange)="toggleCompletion(task.id)" (contextmenu)="onRightClick($event, task)">
+          <!--  (click)="toggleTaskClick(task)"  -->
+          <div style="width: 100%;background-color: lightgray;">
+              <span style="margin-left: 5px;text-decoration: none;background-color: lightgrey;color:black;">Level of Importance: </span>
+              <span class="task-importance "[ngClass]="task.importance" style="text-decoration: none;background-color: lightgrey;"><b>{{ task.importance }}</b></span>             
+              <i style="margin-left: 5px;" class="pi pi-circle-fill task-importance" [ngClass]="task.importance"></i>
+          </div>
+         <div class="task-wrapper" (click)="toggleTaskClick(task)">
+              
+            <div class="task-content" >
+              <div style="margin-left: -20px;">
+                <i *ngIf="!task.clicked" class="pi pi-angle-right"></i>
+                <i *ngIf="task.clicked" class=" pi pi-angle-down"></i>
+              </div>&nbsp;  
+              <p-checkbox [(ngModel)]="task.completed" binary="true" ></p-checkbox>
+              <span>&nbsp;&nbsp;</span> 
+              <!-- blank space -->
+              <span [ngClass]="{ 'completed': task.completed, 'archived-completed': task.completed && task.archived }">{{ task.title | titlecase  }}</span>
+              
+            </div>
+            <div class="task-actions">
+              <button pButton class=" danger-button ui-button-danger ui-button-raised"pTooltip="Delete" tooltipPosition="top" icon="pi pi-trash" (click)="deleteTask(task.id)"></button>              
+              <button pButton class="ui-button-secondary ui-button-raised" pTooltip="Archive" tooltipPosition="top" icon="pi pi-folder" *ngIf="!task.archived" (click)="archiveTask(task.id)"></button>
+              <button pButton class="ui-button-secondary ui-button-raised"pTooltip="Un Archive" tooltipPosition="top"  icon="pi pi-folder-open" *ngIf="task.archived" (click)="unarchiveTask(task.id)"></button>
+            </div>
+        </div>
+        <div class="taskDetails-div" *ngIf="task.clicked">
+          <h4 style="color: navy; font-family: sans-serif">&nbsp; Task Details</h4>
+          <h5 style="color: black; font-family: sans-serif">&nbsp; Status: {{ getStatus(task) }}</h5>
+          <h5 style="color: black; font-family: sans-serif">&nbsp; Created Date: {{taskCreatedDate | date: dateFormat}}</h5>
+          <h5 style="color: rgb(202, 1, 1); font-family: sans-serif"> &nbsp; Due Date: {{ task.dueDate | date: dateFormat }}</h5>
+          <div class="taskDetailsDiv" style="font-family: sans-serif;" > <h5 > Description<hr style="margin-top: 0px;"></h5> </div> <div style="margin-top: -20px;color: black; font-family: sans-serif;"> {{task.details}}</div>
+        </div>  
+        </li>
+          
+        </ul>
+
+    </div>
+</div>
+
+<p-contextMenu #cm [model]="contextMenuItems"></p-contextMenu>
+
+
+
+<p-dialog   header="Task Details" [(visible)]="displayViewTaskDialog" [modal]="true" [style]="{width: '500px'}" (onHide)="onDialogHide()">
+    <!-- View Task Details Content Here -->
+    <div style="width: 100%;" >
+      <div style="width: 100%;" *ngIf="selectedTask">
+        <label for="taskTitle"> Title  </label>
+        <input style="width: 100%;" id="taskTitle" type="text" pInputText [(ngModel)]="selectedTask.title" readonly />
+      </div>
+      <div style="width: 100%;" *ngIf="selectedTask">
+        <label for="taskDetails"> Details </label>
+        <textarea style="width: 100%;" placeholder="Write task Description here..." id="taskDetails" pInputTextarea rows="5" [(ngModel)]="taskDetails"></textarea>
+      </div>
+    </div>
+    <p-footer *ngIf="selectedTask">
+      <button pButton label="Save" icon="pi pi-check" (click)="saveTaskDetails()"></button>
+    </p-footer>
+</p-dialog>
